@@ -1,38 +1,72 @@
+import { Router } from '@angular/router';
 import { PensamentoService } from './../pensamento.service';
 import { Component, OnInit } from '@angular/core';
-import { Pensamento } from '../pensamento/pensamento';
+import { Pensamento } from '../pensamento';
 
 @Component({
   selector: 'app-listar-pensamento',
   templateUrl: './listar-pensamento.component.html',
-  styleUrls: ['./listar-pensamento.component.css']
+  styleUrls: ['./listar-pensamento.component.css'],
 })
 export class ListarPensamentoComponent implements OnInit {
+  listaPensamentos: Pensamento[] = [];
+  paginaAtual: number = 1;
+  haMaisPensamentos: boolean = true;
+  filtro: string = '';
+  favoritos: boolean = false;
+  listaFavoritos: Pensamento[] = [];
+  titulo: string = 'Meu Mural';
 
-  listaPensamentos: Pensamento[] = [
-    // {
-    //   conteudo: 'Passo informações para o componente filho',
-    //   autoria: 'Componente Pai',
-    //   modelo: 'modelo3'
-    // },
-    // {
-    //   conteudo: 'Minha propriedade é decorada com @Input()',
-    //   autoria: 'Componente Filho',
-    //   modelo: 'modelo1'
-    // },
-    // {
-    //   conteudo: 'Mussum Ipsum, cacilds vidis litro abertis. Posuere libero varius. Nullam a nisl ut ante blandit hendrerit. Aenean sit amet nisi. Diuretics paradis num copo é motivis de denguis. Atirei o pau no gatis, per gatis num morreus. Interessantiss quisso pudia ce receita de bolis, mais bolis eu num gostis. Sapien in monti palavris qui num significa nadis i pareci latim. ',
-    //   autoria: '',
-    //   modelo: 'modelo1'
-    // },
-  ];
-
-  constructor(private service: PensamentoService) { }
+  constructor(private service: PensamentoService, private router: Router) {}
 
   ngOnInit(): void {
-    this.service.listar().subscribe(this.listaPensamentos => this.listaPensamentos = listaPensamentos);
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos).subscribe((listaPensamentos) => {
+      this.listaPensamentos = listaPensamentos;
+    });
   }
 
+  carregarMaisPensamentos() {
+    this.service.listar(++this.paginaAtual, this.filtro, this.favoritos).subscribe((listaPensamentos) => {
+      this.listaPensamentos.push(...listaPensamentos);
+      if (listaPensamentos.length < 3) {
+        this.haMaisPensamentos = false;
+      }
+    });
+  }
 
+  pesquisarPensamentos() {
+    this.favoritos = false;
+    this.haMaisPensamentos = true;
+    this.paginaAtual = 1;
+    this.titulo = "Meu Mural"
+
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos)
+      .subscribe( (listaPensamentos) => {
+        this.listaPensamentos = listaPensamentos
+      });
+  }
+
+  listarFavoritos() {
+    this.favoritos = true;
+    this.haMaisPensamentos = true;
+    this.paginaAtual = 1;
+    this.titulo = "Meus Favoritos"
+
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos)
+      .subscribe( (listaPensamentosFavoritos) => {
+        this.listaPensamentos = listaPensamentosFavoritos
+        this.listaFavoritos = listaPensamentosFavoritos;
+      });
+  }
+
+  recarregarComponente() {
+    this.favoritos = false;
+    this.haMaisPensamentos = true;
+    this.paginaAtual = 1;
+
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false; // informar ao Angular para não usar a rota atual (padrão true)
+    this.router.onSameUrlNavigation = 'reload'; // informa como será a atualização/recarregamento do componnet
+    this.router.navigate([this.router.url]); //representa a url atual
+  }
 
 }
